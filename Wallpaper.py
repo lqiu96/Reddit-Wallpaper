@@ -5,22 +5,28 @@ import argparse
 from urllib import urlretrieve
 from PIL import Image
 
-SUBREDDIT = ['earthporn', 'spaceporn']
+SUBREDDIT = {'earthporn', 'spaceporn'}
 DEFAULT_DIRECTORY = r'C:\Users\Lawrence\Pictures\Wallpapers\\'
 FAIL_DIRECTORY = r'C:\Users\Lawrence\Pictures\Rejected Wallpapers\\'
 MIN_RATIO, MAX_RATIO = 1.15, 1.6
 
-
 user_agent = 'Wallpaper Retreiver 1.0 by /u/burstoflight'
 reddit = praw.Reddit(user_agent=user_agent)
 parser = argparse.ArgumentParser()
+parser.add_argument('-s', '--subreddit', nargs='+', help='Add subreddits to search') 
 parser.add_argument('-v', '--verbosity', action='store_true', help='Print the changelog')
 args = parser.parse_args()
 verbose = args.verbosity
+if args.subreddit != None:
+    SUBREDDIT.update(args.subreddit)
+
 submissions = []
 for sub in SUBREDDIT:
-    submissions += reddit.get_subreddit(sub).get_top(limit=10)
-posts = [post for post in submissions if post.score > 1000]
+    submissions += reddit.get_subreddit(sub).get_top(limit=25)
+scores = [post.score for post in submissions]
+scores.sort()
+median_score = scores[len(scores) / 2] if len(scores) % 2 == 0 else scores[(len(scores) / 2) - 1] + scores[len(scores) / 2]
+posts = [post for post in submissions if post.score > median_score]
 is_bad_char = lambda x: x in [':', ';', '<', '>', '"', '\\', '/', '|', '?', '*']
 files = map(lambda x: x[0],
             [urlretrieve(post.url, '{}{}.png'.format(DEFAULT_DIRECTORY, filter(lambda x: not is_bad_char(x), post.title))) for post in posts])
