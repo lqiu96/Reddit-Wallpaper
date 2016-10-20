@@ -24,9 +24,9 @@ for file in files:
         dimension = image.size
         f.close()
         width, height = dimension
-        if not (MIN_RATIO < width * 1.0 / height < MAX_RATIO):
-            file_name = file.replace(DEFAULT_DIRECTORY, '')
-            os.rename(file, '{}{}.png'.format(FAIL_DIRECTORY, file_name))        
+        ratio = width * 1.0 / height
+        if not (MIN_RATIO < ratio < MAX_RATIO):
+            os.rename(file, '{}{}.png'.format(FAIL_DIRECTORY, file[38:]))        
     except IOError:
         f.close()
         os.remove(file)
