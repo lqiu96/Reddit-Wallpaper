@@ -25,11 +25,15 @@ for sub in SUBREDDIT:
     submissions += reddit.get_subreddit(sub).get_top(limit=25)
 scores = [post.score for post in submissions]
 scores.sort()
-median_score = scores[len(scores) / 2] if len(scores) % 2 == 0 else scores[(len(scores) / 2) - 1] + scores[len(scores) / 2]
-posts = [post for post in submissions if post.score > median_score]
+median_score = scores[len(scores) / 2] if len(scores) % 2 == 1 else (scores[(len(scores) / 2) - 1] + scores[len(scores) / 2]) / 2
+posts = [post for post in submissions if post.score >= median_score]
 is_bad_char = lambda x: x in [':', ';', '<', '>', '"', '\\', '/', '|', '?', '*']
-files = map(lambda x: x[0],
-            [urlretrieve(post.url, '{}{}.png'.format(DEFAULT_DIRECTORY, filter(lambda x: not is_bad_char(x), post.title))) for post in posts])
+post_titles = map(lambda p: "".join(['' if is_bad_char(l) else l for l in list(p.title)]), posts)
+i = 0
+while i < len(post_titles):
+    posts[i].title = post_titles[i].encode('utf8')
+    i += 1
+files = map(lambda x: x[0], [urlretrieve(post.url.encode('utf8'), '{}{}.png'.format(DEFAULT_DIRECTORY, post.title)) for post in posts])
 for file in files:
     try:
         f = open(file, 'rb')
