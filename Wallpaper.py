@@ -9,10 +9,18 @@ SUBREDDIT = {'earthporn', 'spaceporn'}
 DEFAULT_DIRECTORY = r'C:\Users\Lawrence\Pictures\Wallpapers\\'
 FAIL_DIRECTORY = r'C:\Users\Lawrence\Pictures\Rejected Wallpapers\\'
 MIN_RATIO, MAX_RATIO = 1.15, 1.6
+time = {
+    'hour': lambda x: x.get_top_from_hour(limit=25),
+    'day': lambda x: x.get_top_from_day(limit=25),
+    'week': lambda x: x.get_top_from_week(limit=25),
+    'month': lambda x: x.get_top_from_month(limit=25),
+    'year': lambda x: x.get_top_from_year(limit=25)
+}
 
 user_agent = 'Wallpaper Retreiver 1.0 by /u/burstoflight'
 reddit = praw.Reddit(user_agent=user_agent)
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='Retreive Wallpapers from Reddit')
+parser.add_argument('-t', '--top', default='day', choices=['hour', 'day', 'week', 'year', 'alltime'], help='Choice time-frame for top submissions')
 parser.add_argument('-s', '--subreddit', nargs='+', help='Add subreddits to search') 
 parser.add_argument('-v', '--verbosity', action='store_true', help='Print the changelog')
 args = parser.parse_args()
@@ -22,7 +30,7 @@ if args.subreddit != None:
 
 submissions = []
 for sub in SUBREDDIT:
-    submissions += reddit.get_subreddit(sub).get_top(limit=25)
+    submissions += time.get(args.top, 'day')(reddit.get_subreddit(sub))
 scores = [post.score for post in submissions]
 scores.sort()
 median_score = scores[len(scores) / 2] if len(scores) % 2 == 1 else (scores[(len(scores) / 2) - 1] + scores[len(scores) / 2]) / 2
