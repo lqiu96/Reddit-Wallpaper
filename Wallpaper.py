@@ -8,7 +8,7 @@ from urllib.request import urlopen
 from PIL import Image
 from bs4 import BeautifulSoup
 
-SUBREDDIT = {'earthporn', 'spaceporn', 'skyporn', 'waterporn'}
+DEFAULT_SUBREDDITS = {'earthporn', 'spaceporn', 'skyporn', 'waterporn'}
 DEFAULT_DIRECTORY = r'C:\Users\Lawrence\Pictures\Wallpapers\\'
 FAIL_DIRECTORY = r'C:\Users\Lawrence\Pictures\Rejected Wallpapers\\'
 MIN_RATIO, MAX_RATIO = 1.15, 1.6
@@ -22,28 +22,34 @@ time = {
     'all': lambda x, y: x.get_top_from_all(limit=y)
 }
 
+
+def is_bad_char(x):
+    return x in [':', ';', '<', '>', '"', '\\', '/', '|', '?', '!', '*']
+
+
 user_agent = 'Wallpaper Retreiver 1.1 by /u/burstoflight'
 reddit = praw.Reddit(user_agent=user_agent)
-parser = argparse.ArgumentParser(description='Retreive Wallpapers from Reddit')
-parser.add_argument('-t', '--top', default='day', choices=['hour', 'day', 'week', 'month', 'year', 'all'], help='Choice time-frame for top submissions')
+parser = argparse.ArgumentParser(description='Retrieve Wallpapers from Reddit')
+parser.add_argument('-t', '--top', default='day', choices=['hour', 'day', 'week', 'month', 'year', 'all'],
+                    help='Choice time-frame for top submissions')
 parser.add_argument('-n', '--num', type=int, default=25, help='Submission limit')
-parser.add_argument('-s', '--subreddit', nargs='+', help='Add subreddits to search') 
+parser.add_argument('-s', '--subreddit', nargs='+', help='Add subreddits to search')
 parser.add_argument('-v', '--verbosity', action='store_true', help='Print the changelog')
 args = parser.parse_args()
 verbose = args.verbosity
 if args.subreddit != None:
-    SUBREDDIT.update(args.subreddit)
+    DEFAULT_SUBREDDITS.update(args.subreddit)
 
 submissions = []
-for sub in SUBREDDIT:
+for sub in DEFAULT_SUBREDDITS:
     submissions += time.get(args.top, 'day')(reddit.get_subreddit(sub), args.num)
 scores = [post.score for post in submissions]
 scores.sort()
 # Median score determines the minimum score to retrieve images
-median_score = scores[len(scores) // 2] if len(scores) % 2 == 1 else (scores[(len(scores) // 2) - 1] + scores[len(scores) // 2]) // 2
+median_score = scores[len(scores) // 2] if len(scores) % 2 == 1 else (scores[(len(scores) // 2) - 1] + scores[
+    len(scores) // 2]) // 2
 posts = list(filter(lambda x: x.score >= median_score, submissions))
 # Remove the certain characters that cannot be included in file names
-is_bad_char = lambda x: x in [':', ';', '<', '>', '"', '\\', '/', '|', '?', '!', '*']
 post_titles = list(map(lambda p: "".join(['' if is_bad_char(l) else l for l in list(p.title)]), posts))
 i = 0
 while i < len(post_titles):
