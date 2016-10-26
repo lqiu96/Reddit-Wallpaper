@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 DEFAULT_DIRECTORY = r'C:\Users\Lawrence\Pictures\Wallpapers\\'
 FAIL_DIRECTORY = r'C:\Users\Lawrence\Pictures\Rejected Wallpapers\\'
 MIN_RATIO, MAX_RATIO = 1.15, 1.6
-FILE_LENGTH_LIMIT = 250
+FILE_LENGTH_LIMIT = 200
 time = {
     'hour': lambda x, y: x.get_top_from_hour(limit=y),
     'day': lambda x, y: x.get_top_from_day(limit=y),
@@ -33,8 +33,19 @@ def get_files(posts):
         if post.url.startswith('http://imgur.com'):
             page = urlopen(post.url)
             soup = BeautifulSoup(page.read(), 'html.parser')
-            rank = soup.find('div', {'class': 'post-image'}).a.img
-            post.url = 'https:' + rank['src']
+            page_element = soup.find('div', {'class': 'post-image'})
+            # Sometimes the link does inlcude i.imgur but opens to i.imgur
+            if page_element == None:
+                page_element = soup.find('img', {'class': 'shrinkToFit'})
+                if page_element == None:
+                    print('Could not do: {}:'.format(post.url))
+                    continue
+                else:
+                    post.url = page_element['src']
+            else:
+                rank = page_element.a.img
+                post.url = 'https:' + rank['src']
+        print(post.url)
         r = requests.get(post.url, stream=True)
         file_name = post.title[:FILE_LENGTH_LIMIT] if len(post.title) > FILE_LENGTH_LIMIT else post.title
         file_location = '{}{}.png'.format(DEFAULT_DIRECTORY, file_name)
