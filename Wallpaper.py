@@ -7,8 +7,8 @@ import shutil
 from urllib.request import urlopen
 from PIL import Image
 
-DEFAULT_DIRECTORY = r'C:\Users\Lawrence\Pictures\Wallpapers\\'
-FAIL_DIRECTORY = r'C:\Users\Lawrence\Pictures\Rejected Wallpapers\\'
+DEFAULT_DIRECTORY = 'C:\\Users\\Lawrence\\Pictures\\Wallpapers\\'
+FAIL_DIRECTORY = 'C:\\Users\\Lawrence\\Pictures\\Rejected Wallpapers\\'
 MIN_RATIO, MAX_RATIO = 1.15, 1.6
 FILE_LENGTH_LIMIT = 200
 time = {
@@ -22,10 +22,30 @@ time = {
 
 
 def is_bad_char(x):
+    """Function that checks if a character cannot exist inside a file name
+
+    Args:
+    x: Char inside the file name
+
+    Returns:
+    True/ False if x contains a character that cannot be in a file name
+
+    """
     return x in [':', ';', '<', '>', '"', '\\', '/', '|', '?', '!', '*']
 
 
 def get_files(posts):
+    """Function that that iterates through all the posts and downloads
+    the image from the url. Each image from a post url is intially
+    downloaded to the default directory.
+
+    Args:
+    posts: List of post objects containing the title and url of the post
+
+    Returns:
+    List of file names where the images are downloaded to
+
+    """
     files = []
     for post in posts:
         # Certain imgur links do not open directly to the image
@@ -42,6 +62,19 @@ def get_files(posts):
 
 
 def reject_files(files, verbose):
+    """Function that iterates through the location of each file and checks
+    if the ration of the file's dimension match the required ratio. For desktop
+    wallpapers, the default ratio is set between 1.15 and 1.6. If the file's ratio
+    does not fall between the ration bounds, it moves the file to the rejected folder
+
+    Args:
+    files: List of file locations
+    verbose: Bool to tell if program needs to print out when a file is rejected or passed
+
+    Returns:
+    None
+
+    """
     for file in files:
         try:
             f = open(file, 'rb')
@@ -57,7 +90,7 @@ def reject_files(files, verbose):
             else:
                 if verbose:
                     print('Rejected: {}'.format(file))
-                rejected_file = '{}{}'.format(FAIL_DIRECTORY, file[39:])
+                rejected_file = '{}{}'.format(FAIL_DIRECTORY, file[38:])
                 if len(rejected_file) > FILE_LENGTH_LIMIT:
                     rejected_file = rejected_file[:FILE_LENGTH_LIMIT] + '.png'
                 if os.path.exists(rejected_file):
@@ -72,7 +105,7 @@ def reject_files(files, verbose):
 
 if __name__ == '__main__':
     default_subreddits = {'earthporn', 'spaceporn', 'skyporn', 'waterporn'}
-    user_agent = 'Wallpaper Retreiver 1.1 by /u/burstoflight'
+    user_agent = 'Wallpaper Retreiver 1.2 by /u/burstoflight'
     reddit = praw.Reddit(user_agent=user_agent)
     parser = argparse.ArgumentParser(description='Retrieve Wallpapers from Reddit')
     parser.add_argument('-t', '--top', default='day', choices=['hour', 'day', 'week', 'month', 'year', 'all'],
@@ -80,6 +113,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--num', type=int, default=25, help='Submission limit')
     parser.add_argument('-s', '--subreddit', nargs='+', help='Add subreddits to search')
     parser.add_argument('-v', '--verbosity', action='store_true', help='Print the changelog')
+    parser.add_argument('-c', '--check', help='Check through the files to make sure each is within the ratio')
     args = parser.parse_args()
     verbose = args.verbosity
     if args.subreddit is not None:
@@ -101,3 +135,5 @@ if __name__ == '__main__':
         posts[i].title = post_titles[i]
         i += 1
     reject_files(get_files(posts), args.verbosity)
+    if args.fix:
+        reject_files(os.listdir(DEFAULT_DIRECTORY), args.verbosity)
