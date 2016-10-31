@@ -52,8 +52,7 @@ def get_files(posts):
         if post.url.startswith('http://imgur.com') or post.url.startswith('https://imgur.com'):
             post.url += '.jpg'
         r = requests.get(post.url, stream=True)
-        file_name = post.title[:FILE_LENGTH_LIMIT] if len(post.title) > FILE_LENGTH_LIMIT else post.title
-        file_location = '{}{}.png'.format(DEFAULT_DIRECTORY, file_name)
+        file_location = '{}{}.png'.format(DEFAULT_DIRECTORY, post.title)
         with open(file_location, 'wb') as out_file:
             r.raw.decode_content = True
             shutil.copyfileobj(r.raw, out_file)
@@ -91,8 +90,6 @@ def reject_files(files, verbose):
                 if verbose:
                     print('Rejected: {}'.format(file))
                 rejected_file = '{}{}'.format(FAIL_DIRECTORY, file[38:])
-                if len(rejected_file) > FILE_LENGTH_LIMIT:
-                    rejected_file = rejected_file[:FILE_LENGTH_LIMIT] + '.png'
                 if os.path.exists(rejected_file):
                     os.remove(rejected_file)
                 os.rename(file, rejected_file)
@@ -116,6 +113,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--check', help='Check through the files to make sure each is within the ratio')
     args = parser.parse_args()
     verbose = args.verbosity
+    # Adds any additional subreddits not already suggested
     if args.subreddit is not None:
         default_subreddits.update(args.subreddit)
 
@@ -132,8 +130,8 @@ if __name__ == '__main__':
     post_titles = list(map(lambda p: "".join(['' if is_bad_char(l) else l for l in list(p.title)]), posts))
     i = 0
     while i < len(post_titles):
-        posts[i].title = post_titles[i]
+        posts[i].title = post_titles[i][:FILE_LENGTH_LIMIT]
         i += 1
     reject_files(get_files(posts), args.verbosity)
-    if args.fix:
+    if args.check:
         reject_files(os.listdir(DEFAULT_DIRECTORY), args.verbosity)
