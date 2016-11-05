@@ -11,7 +11,7 @@ DEFAULT_DIRECTORY = 'C:\\Users\\Lawrence\\Pictures\\Wallpapers\\'
 FAIL_DIRECTORY = 'C:\\Users\\Lawrence\\Pictures\\Rejected Wallpapers\\'
 MIN_RATIO, MAX_RATIO = 1.15, 1.6
 FILE_LENGTH_LIMIT = 200
-time = {
+TIME = {
     'hour': lambda x, y: x.get_top_from_hour(limit=y),
     'day': lambda x, y: x.get_top_from_day(limit=y),
     'week': lambda x, y: x.get_top_from_week(limit=y),
@@ -111,15 +111,21 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--subreddit', nargs='+', help='Add subreddits to search')
     parser.add_argument('-v', '--verbosity', action='store_true', help='Print the changelog')
     parser.add_argument('-c', '--check', help='Check through the files to make sure each is within the ratio')
+    parser.add_argument('-p', '--passdir', help='Directory where passed wallpapers go')
+    parser.add_argument('-f', '--faildir', help='Directory where failed wallpapers go')
     args = parser.parse_args()
     verbose = args.verbosity
     # Adds any additional subreddits not already suggested
     if args.subreddit is not None:
         default_subreddits.update(args.subreddit)
+    if args.passdir is not None and os.path.isdir(args.passdir):
+        DEFAULT_DIRECTORY = args.passdir
+    if args.faildir is not None and os.path.isdir(args.faildir):
+        FAIL_DIRECTORY = args.faildir
 
     submissions = []
     for sub in default_subreddits:
-        submissions += time.get(args.top, lambda x, y: x.get_top_from_day(limit=y))(reddit.get_subreddit(sub), args.num)
+        submissions += TIME.get(args.top, lambda x, y: x.get_top_from_day(limit=y))(reddit.get_subreddit(sub), args.num)
     scores = [post.score for post in submissions]
     scores.sort()
     # Median score determines the minimum score to retrieve images
