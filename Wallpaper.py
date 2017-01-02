@@ -4,20 +4,19 @@ import os.path
 import argparse
 import requests
 import shutil
-from urllib.request import urlopen
 from PIL import Image
 
-DEFAULT_DIRECTORY = 'C:\\Users\\Lawrence\\Pictures\\Wallpapers\\'
-FAIL_DIRECTORY = 'C:\\Users\\Lawrence\\Pictures\\Rejected Wallpapers\\'
+DEFAULT_DIRECTORY = 'C:\\Users\\lqiu9\\Google Drive\\Wallpapers\\'
+FAIL_DIRECTORY = 'C:\\Users\\lqiu9\\Google Drive\\Rejected Wallpapers\\'
 MIN_RATIO, MAX_RATIO = 1.15, 1.6
 FILE_LENGTH_LIMIT = 200
 TIME = {
-    'hour': lambda x, y: x.get_top_from_hour(limit=y),
-    'day': lambda x, y: x.get_top_from_day(limit=y),
-    'week': lambda x, y: x.get_top_from_week(limit=y),
-    'month': lambda x, y: x.get_top_from_month(limit=y),
-    'year': lambda x, y: x.get_top_from_year(limit=y),
-    'all': lambda x, y: x.get_top_from_all(limit=y)
+    'hour': lambda x, y: x.top('hour', limit=y),
+    'day': lambda x, y: x.top('day', limit=y),
+    'week': lambda x, y: x.top('week', limit=y),
+    'month': lambda x, y: x.top('month', limit=y),
+    'year': lambda x, y: x.top('year', limit=y),
+    'all': lambda x, y: x.top('all', limit=y)
 }
 
 
@@ -102,8 +101,7 @@ def reject_files(files, verbose):
 
 if __name__ == '__main__':
     default_subreddits = {'earthporn', 'spaceporn', 'skyporn', 'waterporn'}
-    user_agent = 'Wallpaper Retreiver 1.2 by /u/burstoflight'
-    reddit = praw.Reddit(user_agent=user_agent)
+    reddit = praw.Reddit('reddit_wallpaper')
     parser = argparse.ArgumentParser(description='Retrieve Wallpapers from Reddit')
     parser.add_argument('-t', '--top', default='day', choices=['hour', 'day', 'week', 'month', 'year', 'all'],
                         help='Choice time-frame for top submissions')
@@ -125,12 +123,12 @@ if __name__ == '__main__':
 
     submissions = []
     for sub in default_subreddits:
-        submissions += TIME.get(args.top, lambda x, y: x.get_top_from_day(limit=y))(reddit.get_subreddit(sub), args.num)
+        submissions += TIME.get(args.top, lambda x, y: x.get('top', limit=y))(reddit.subreddit(sub), args.num)
     scores = [post.score for post in submissions]
     scores.sort()
     # Median score determines the minimum score to retrieve images
-    median_score = scores[len(scores) // 2] if len(scores) % 2 == 1 else (scores[(len(scores) // 2) - 1] + scores[
-        len(scores) // 2]) // 2
+    median_score = scores[len(scores) // 2] if len(scores) % 2 == 1 \
+        else (scores[(len(scores) // 2) - 1] + scores[len(scores) // 2]) // 2
     posts = list(filter(lambda x: x.score >= median_score, submissions))
     # Remove the certain characters that cannot be included in file names
     post_titles = list(map(lambda p: "".join(['' if is_bad_char(l) else l for l in list(p.title)]), posts))
